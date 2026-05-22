@@ -31,20 +31,23 @@ def filter_cve(cve,target_vendor, target_product):
         nodes.extend(config.get("nodes", []))
     for node in nodes:
         cpeMatches.extend(node.get("cpeMatch", []))
+    is_match = False
     for cpeMatch in cpeMatches:
         criteria = cpeMatch.get("criteria", "")
         vendor, product = extract_vendor_product(criteria)
         if vendor == target_vendor and product == target_product:
-            print(f"Match found: {criteria}")
-        else:
-            print(f"No match: {criteria}")
+            is_match = True
+            break
+
+    return is_match
 
 with open(source_dir, 'r', encoding='utf-8') as file:
     data = json.load(file)
-    resultsNum = data.get("resultsPerPage", 0)
     vulnerabilities = data.get("vulnerabilities", [])
-    cve = vulnerabilities[0].get("cve")
+    cves = [vulnerability.get("cve") for vulnerability in vulnerabilities]
+    cve = cves[0]
     print(f"keys in cve: {cve.keys()}")    
 
-    filter_cve(cve, "itsourcecode", "school_management_system")
+    filtered = list(filter(lambda x: filter_cve(x, "microsoft", "windows"),cves))
+    print(f"Filtered CVEs: {len(filtered)}")
         
