@@ -2,3 +2,11 @@
 /json
 /filtered_data
 .venv
+/scripts/__pycache__
+/scripts/conf
+/scripts/data
+/scripts/installedpackages
+/scripts/report
+/scripts/test
+/scripts/usrLocalLib
+/scripts/config.py
