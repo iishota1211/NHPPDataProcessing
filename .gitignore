@@ -7,7 +7,7 @@
 /scripts/data
 /scripts/installedpackages
 /scripts/report
-/scripts/testFolder
 /scripts/usrLocalLib
 /scripts/config.py
 /scripts/.DS_Store
+/scripts/testFolder/__pycache__
