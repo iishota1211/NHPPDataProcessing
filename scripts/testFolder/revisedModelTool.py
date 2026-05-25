@@ -47,11 +47,11 @@ def LLF_t(args, timeDataFormat, meanValueFun, intensityFun):
         
     return float(res)
 
-	# 时间数据时的LLF
 	# timeDataFormat[0] = [t_i, n_i]
 	# t_i : failure time
 	# n_i : cumulative number of software faults
 def LLF_t_float(args, timeDataFormat, meanValueFun, intensityFun):
+    print(f"this is LLF_t_float")
     res = 0
     old_t = 0
     old_n = 0
@@ -119,10 +119,10 @@ def LLF_g(args, groupDataFormat, meanValueFun, intensityFun):
 
 		return float(res)
 
-	# 组数据时的LLF
+
 	# t_i : calendar time
 	# n_i : cumulative number of software faults
-	# intensityFun 是为了参数格式上与LF_t相同。并不实际使用。
+	# intensityFun is only used for matching parater to LLF_t, and is not used in LLF_g
 def LLF_g_float(args, groupDataFormat, meanValueFun, intensityFun):
     res = 0
     old_t = 0

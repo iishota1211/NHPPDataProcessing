@@ -30,15 +30,11 @@ for dataType in dataSetDict:
 
                 meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
                 intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
-                llf = revisedModelTool.logLikelihoodFunction(modelDict, dataType)[0]
+                likelihoodFun, likelihoodFun_backup = revisedModelTool.logLikelihoodFunction(modelDict, dataType)
 
                 resDict = classicEM.parameterEstimate(methodDict, modelDict, dataType, culFormatedTrainData)
                 paraList = resDict["paraList"]
-                if not meanValueFun or not intensityFun or not llf:
+                if not meanValueFun or not intensityFun or not likelihoodFun:
                     print(f"Model {modelName} is not implemented yet.")
                     break
-                print(f"Log-likelihood function value for model {modelName} : {llf(paraList, culFormatedTrainData, meanValueFun, intensityFun)}")
-
-meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
-intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
-llf = revisedModelTool.logLikelihoodFunction(modelDict, dataType)[0]
+                print(f"Log-likelihood function value for model {modelName} : {likelihoodFun(paraList, culFormatedTrainData, meanValueFun, intensityFun)}")
