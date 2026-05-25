@@ -7,7 +7,7 @@
 /scripts/data
 /scripts/installedpackages
 /scripts/report
-/scripts/test
+/scripts/testFolder
 /scripts/usrLocalLib
 /scripts/config.py
 /scripts/.DS_Store
