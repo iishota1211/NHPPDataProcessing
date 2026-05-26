@@ -1,6 +1,6 @@
 /zip
 /json
-/filtered_data
+/filtered_data/filtered_cves
 .venv
 /scripts/__pycache__
 /scripts/conf
