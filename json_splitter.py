@@ -3,31 +3,13 @@ import os
 import json
 from datetime import datetime
 from pathlib import Path
-
-def save_json_data(data, file_path):
-    if not os.path.exists(os.path.dirname(file_path)):
-        os.makedirs(os.path.dirname(file_path))
-    try:
-        with open(file_path, 'w', encoding='utf-8') as file:
-                json.dump(data, file, indent=4)
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-
-def load_json_data(file_path):
-    data = None
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-        data = None
-    return data
+from utility import *
 
 def main():
     current_dir = os.path.dirname(os.path.realpath(__file__))
     base_dir = os.path.join(current_dir, "filtered_data")
     source_folder = os.path.join(base_dir, "filtered_details")
-    source_file_path = os.path.join(source_folder, "filtered_data.json")
+    source_file_path = os.path.join(source_folder, "filtered_data_sorted.json")
 
     json_data = load_json_data(source_file_path)
     for key in json_data.keys():
@@ -37,17 +19,20 @@ def main():
     for key in asc.keys():
         tmp_data = sorted(asc[key])
         asc[key] = tmp_data
-    save_json_data(asc, os.path.join(source_folder, "filtered_data_sorted.json"))
-
-    print("After sorting:")
-    test_key = "version_17"
-    for value in asc[test_key]:
-        print(f"{test_key} : {value}")
+    #save_json_data(asc, os.path.join(source_folder, "filtered_data_sorted.json"))
 
     save_folder_path = os.path.join(base_dir, "filtered_details","Type2")
     for key in asc.keys():
         file_path = os.path.join(save_folder_path, f"{key}.json")
-        save_json_data(asc[key], file_path)
+        #save_json_data(asc[key], file_path)
+
+    first_value = datetime.fromisoformat(asc['version_7'][0])
+    last_value = datetime.fromisoformat(asc['version_7'][-1])
+
+    diff = last_value - first_value
+    print(f"First value: {first_value}")
+    print(f"Last value: {last_value}")  
+    print(f"Difference in days: {diff}")
 
 if __name__=="__main__":
     main()
