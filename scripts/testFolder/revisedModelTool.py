@@ -19,8 +19,25 @@ def logLikelihoodFunction(modelDict, dataType):
 	return likelihoodFun, likelihoodFun_backup
 
 
+def LLF_t_multi_version(args, timeDataFormat, meanValueFun, intensityFun):
+    res = 0
+
+    for timeData in timeDataFormat:
+        last_t,last_n, = timeData
+        meanValue = meanValueFun(last_t, args)
+        res = - meanValue
+        for dataEle in timeDataFormat:
+            t_i = dataEle[0]
+            n_i = dataEle[1]
+            intensity = intensityFun(t_i, args)
+            if intensity == Decimal(0.0):
+                return float("-inf")
+            lnIntensity = Decimal(intensity).ln()
+            res = res + lnIntensity
+            
+    return float(res)
+
 def LLF_t(args, timeDataFormat, meanValueFun, intensityFun):
-    print(f"this is LLF_t")
     res = 0
     old_t = 0
     old_n = 0
@@ -51,7 +68,6 @@ def LLF_t(args, timeDataFormat, meanValueFun, intensityFun):
 	# t_i : failure time
 	# n_i : cumulative number of software faults
 def LLF_t_float(args, timeDataFormat, meanValueFun, intensityFun):
-    print(f"this is LLF_t_float")
     res = 0
     old_t = 0
     old_n = 0
