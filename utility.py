@@ -1,5 +1,6 @@
 import os
 import json
+import pandas as pd
 
 def save_json_data(data, file_path):
     if not os.path.exists(os.path.dirname(file_path)):
@@ -26,3 +27,11 @@ def append_data(dict,key,value):
     else:
         dict[key] = [value]
     return dict
+
+def save_to_excel(list, file_path):
+    df = pd.DataFrame(list)
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+    
+    with pd.ExcelWriter(file_path) as writer:
+        df.to_excel(writer, index=False, header=False)

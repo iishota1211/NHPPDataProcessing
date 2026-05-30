@@ -47,14 +47,9 @@ def select_version_range():
         return select_version_range()
     
 def select_initial_time_from_file(version_detail,dataType):
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    source_folder = os.path.join(current_dir, "filtered_data", "truncated_data", dataType)
-
     version_num = select_version_number_from_user(version_detail)
     file_name = f"version_{version_num}"
-    file_path = os.path.join(source_folder, f"{file_name}.json")
 
-    data = load_json_data(file_path)
     if file_name in version_detail:
         initial_time_str = version_detail[file_name][0]
         try:
@@ -68,10 +63,11 @@ def select_initial_time_from_file(version_detail,dataType):
 def select_version_number_from_user(version_detail):
     file_version_num = input("Please enter the file version number for initial time selection: ")
     file_name = f"version_{file_version_num}"
+    last_version_num = max([int(key.split("_")[1]) for key in version_detail.keys()])
     if file_name in version_detail:
         return int(file_version_num)
     else:
-        print(f"File name {file_name} not found in version detail. Please try again.")
+        print(f"File name {file_name} not found in version detail. Please enter a valid version number (1-{last_version_num}).")
         return select_version_number_from_user(version_detail)
 
 def select_initial_time_from_user():
@@ -110,12 +106,27 @@ def ask_save_json_data():
         print("Invalid choice. Please enter '1' or '2'.")
         return ask_save_json_data()
     
+def ask_save_excel_data():
+    choice = input("Do you want to save the timed data to Excel files? (yes:1, no:2): ").lower()
+    if choice == "1":
+        return True
+    elif choice == "2":
+        return False
+    else:
+        print("Invalid choice. Please enter '1' or '2'.")
+        return ask_save_excel_data()
+    
 def save_json_data_conditionally(data, file_path,is_save):
     if is_save:
         save_json_data(data, file_path)
-        print(f"Timed data saved to {file_path}")
-    else:
-        print("Timed data not saved.")
+        print(f"json Timed data saved to {file_path}")
+
+
+def save_excel_data_conditionally(data, file_path, is_save):
+    if is_save:
+        save_to_excel(data, file_path)
+        print(f"Excel Timed data saved to {file_path}")
+
 
 def find_time_scale(time_scale):
     second = 1
@@ -135,22 +146,25 @@ def find_time_scale(time_scale):
 def main():
     dataType = "Type1"
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    source_folder = os.path.join(current_dir, "filtered_data", "truncated_data", dataType)
-    save_folder_base_path = os.path.join(current_dir, "filtered_data", "timed_data", dataType)
+    json_source_folder = os.path.join(current_dir, "filtered_data", "truncated_data", dataType)
+    json_save_folder_base_path = os.path.join(current_dir, "filtered_data", "timed_data", dataType)
     version_detail_path = os.path.join(current_dir, "filtered_data", "version_detail.json")
     version_detail = load_json_data(version_detail_path)
 
     start_version, end_version = select_version_range()
     initial_time = select_initial_time(version_detail, dataType)
     time_scale = select_time_scale()
-    is_save = ask_save_json_data()
+    is_save_json = ask_save_json_data()
+    is_save_excel = ask_save_excel_data()
 
     selected_time_scale_name = find_time_scale(time_scale)
     save_folder_name = f"{selected_time_scale_name}_scale_{start_version}_{end_version}"
-    save_folder_path = os.path.join(save_folder_base_path, save_folder_name)
+    json_save_folder_path = os.path.join(json_save_folder_base_path, save_folder_name)
+    excel_save_folder_base_path = os.path.join(current_dir, "scripts", "data", "timeData", dataType)
+    excel_save_folder_path = os.path.join(excel_save_folder_base_path, save_folder_name)
 
 
-    for path in Path(source_folder).glob("*.json"):
+    for path in Path(json_source_folder).glob("*.json"):
         data = load_json_data(path)
         file_name = path.stem
         if not file_name in version_detail.keys():
@@ -160,8 +174,10 @@ def main():
             print(f"File {file_name} is not in the selected version range ({start_version}-{end_version}). Skipping.")
             continue
 
+        print(f"data length: {len(data)}, file name: {file_name}")
         timed_data = convert_to_timed_data(data, initial_time, time_scale)
-        save_json_data_conditionally(timed_data, os.path.join(save_folder_path, f"{file_name}.json"), is_save)
+        save_json_data_conditionally(timed_data, os.path.join(json_save_folder_path, f"{file_name}.json"), is_save_json)
+        save_excel_data_conditionally(timed_data, os.path.join(excel_save_folder_path, f"{file_name}.xlsx"), is_save_excel)
 
 
 if __name__=="__main__":
