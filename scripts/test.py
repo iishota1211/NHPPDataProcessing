@@ -1,40 +1,89 @@
-import math
-
+import json
+import os
 from classicUtils import modelTool
 from testFolder import revisedModelTool
 from usrLocalLib import usrDataProcess
 from classicGlobalLib import classicEM
 import config
 
-modelNameList 	= ["Exp","Gamma","Pareto","TruncNormal","LogNormal","TruncLogist","LogLogist","TruncEVMax","LogEVMax","TruncEVMin","LogEVMin"]
+modelNameList 	= ["Exp","Gamma","Pareto","LogEVMin","Plaw","Log"]
 dataSetDict = usrDataProcess.loadData(config.segmentPatternFlag, config.normalFlag)
 modelType = "typeI"
 dataType = "time"
-args = [0.1, 0.2, 0.3]
 
+def testLLF(methodDict, modelDict, dataType, dataDict):
+    meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
+    culFormatedTrainData = dataDict["culFormatedTrainData"]
+    resDict = classicEM.parameterEstimate(methodDict, modelDict, dataType, culFormatedTrainData)
+    paraList = resDict["paraList"]
+    culFormatedTestData = dataDict["culFormatedTestData"]
+    AIC = resDict["measureValueDict"]["AIC"]
+    modelName = modelDict["modelName"]
+    print(f"Model: {modelName}")
+    print(f"paramter List: {paraList}")
+    print(f"Measure Names: {resDict['measureNameList']}")
+    print(f"Measure Values: {resDict['measureValueDict']['AIC']}")
 
-for dataType in dataSetDict:
-    for predInterval in dataSetDict[dataType]:
-        for dataName in dataSetDict[dataType][predInterval]:
-            print(f"dataType : {dataType}, dataName : {dataName}, predInterval : {predInterval}")
-            dataDict = dataSetDict[dataType][predInterval][dataName]
-            culFormatedTrainData = dataDict["culFormatedTrainData"]
-            for nowTime, nowNum in culFormatedTrainData:
-                print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
-            culFormatedTestData = dataDict["culFormatedTestData"]
-            for modelName in modelNameList:
-                modelDict = dict()
-                modelDict["modelType"] = modelType
-                modelDict["modelName"] = modelName
-                methodDict = None
+    predList = []
+    actualList = []
+    for nowTime, nowNum in culFormatedTestData:
+        predNum = meanValueFun(nowTime, paraList)
+        predList.append(predNum)
+        actualList.append(nowNum)
+        print(f"(Time) {nowTime} : (Predicted Value) {predNum}")
+    print("\n")
 
-                meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
-                intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
-                likelihoodFun, likelihoodFun_backup = revisedModelTool.logLikelihoodFunction(modelDict, dataType)
+    pmse = calculatePMSE(predList, actualList)
+    print(f"PMSE: {pmse}")
 
-                resDict = classicEM.parameterEstimate(methodDict, modelDict, dataType, culFormatedTrainData)
-                paraList = resDict["paraList"]
-                if not meanValueFun or not intensityFun or not likelihoodFun:
-                    print(f"Model {modelName} is not implemented yet.")
-                    break
-                print(f"Log-likelihood function value for model {modelName} : {likelihoodFun(paraList, culFormatedTrainData, meanValueFun, intensityFun)}")
+    resultDict = dict()
+    resultDict["AIC"] = AIC
+    resultDict["PMSE"] = pmse
+
+    return resultDict
+
+def mergeDataSet(dataSetDict):
+    lastDataName = list(dataSetDict[dataType][predInterval].keys())[-1]
+
+    FinalFormatedTrainData = []
+    FinalFormatedTestData = []
+    for dataName in dataSetDict[dataType][predInterval]:
+        culFormatedTrainData = dataSetDict[dataType][predInterval][dataName]["culFormatedTrainData"]
+        culFormatedTestData = dataSetDict[dataType][predInterval][dataName]["culFormatedTestData"]
+
+        mergedFormatedData = culFormatedTrainData + culFormatedTestData
+        if dataName != lastDataName:
+            FinalFormatedTrainData = FinalFormatedTrainData + mergedFormatedData
+        else:
+            FinalFormatedTestData = FinalFormatedTestData + mergedFormatedData
+
+    return FinalFormatedTrainData, FinalFormatedTestData
+
+def calculatePMSE(predList, actualList):
+    if len(predList) != len(actualList):
+        raise ValueError("Length of predicted list and actual list must be the same.")
+    
+    mse = sum((pred - actual) ** 2 for pred, actual in zip(predList, actualList)) / len(predList)
+    return mse
+
+for predInterval in dataSetDict[dataType]:
+
+    culFormatedTrainData, culFormatedTestData = mergeDataSet(dataSetDict)
+
+    DataDict = dict()
+    DataDict["culFormatedTrainData"] = culFormatedTrainData
+    DataDict["culFormatedTestData"] = culFormatedTestData
+    for nowTime, nowNum in culFormatedTrainData:
+        print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
+    resultList = []
+    for modelName in modelNameList:
+        modelDict = dict()
+        modelDict["modelType"] = modelType
+        modelDict["modelName"] = modelName
+        methodDict = None
+
+        resultDict = testLLF(methodDict, modelDict, dataType, DataDict)
+        resultList.append((modelName, resultDict))
+
+    for modelName, resultDict in resultList:
+        print(f"Model: {modelName}, AIC: {resultDict['AIC']}, PMSE: {resultDict['PMSE']}")
