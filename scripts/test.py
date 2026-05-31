@@ -5,6 +5,7 @@ from testFolder import revisedModelTool
 from usrLocalLib import usrDataProcess
 from classicGlobalLib import classicEM
 import config
+from test_functions import *
 
 modelNameList 	= ["Exp","Gamma","Pareto","LogEVMin","Plaw","Log"]
 dataSetDict = usrDataProcess.loadData(config.segmentPatternFlag, config.normalFlag)
@@ -59,6 +60,23 @@ def mergeDataSet(dataSetDict):
 
     return FinalFormatedTrainData, FinalFormatedTestData
 
+def mergeDataSetByVersion(dataSetDict):
+    lastDataName = list(dataSetDict[dataType][predInterval].keys())[-1]
+
+    FinalFormatedTrainDataList = []
+    FinalFormatedTestData = []
+    for dataName in dataSetDict[dataType][predInterval]:
+        culFormatedTrainData = dataSetDict[dataType][predInterval][dataName]["culFormatedTrainData"]
+        culFormatedTestData = dataSetDict[dataType][predInterval][dataName]["culFormatedTestData"]
+
+        mergedFormatedData = culFormatedTrainData + culFormatedTestData
+        if dataName != lastDataName:
+            FinalFormatedTrainDataList.append(mergedFormatedData)
+        else:
+            FinalFormatedTestData = mergedFormatedData
+
+    return FinalFormatedTrainDataList, FinalFormatedTestData
+
 def calculatePMSE(predList, actualList):
     if len(predList) != len(actualList):
         raise ValueError("Length of predicted list and actual list must be the same.")
@@ -66,24 +84,23 @@ def calculatePMSE(predList, actualList):
     mse = sum((pred - actual) ** 2 for pred, actual in zip(predList, actualList)) / len(predList)
     return mse
 
+
 for predInterval in dataSetDict[dataType]:
 
-    culFormatedTrainData, culFormatedTestData = mergeDataSet(dataSetDict)
+    culFormatedTrainDataList, culFormatedTestData = mergeDataSetByVersion(dataSetDict)
+    lastCulFormatedTrainData = culFormatedTrainDataList[-1]
 
-    DataDict = dict()
-    DataDict["culFormatedTrainData"] = culFormatedTrainData
-    DataDict["culFormatedTestData"] = culFormatedTestData
-    for nowTime, nowNum in culFormatedTrainData:
-        print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
-    resultList = []
     for modelName in modelNameList:
         modelDict = dict()
         modelDict["modelType"] = modelType
         modelDict["modelName"] = modelName
         methodDict = None
+    
+        print(f"Testing model: {modelName}")
+        paraList_scipy = calculate_parameters(modelDict, dataType, culFormatedTrainDataList)
+        print(f"Estimated parameters for model {modelName} using scipy.optimize: {paraList_scipy}")
+    #     resultDict = testLLF(methodDict, modelDict, dataType, DataDict)
+    #     resultList.append((modelName, resultDict))
 
-        resultDict = testLLF(methodDict, modelDict, dataType, DataDict)
-        resultList.append((modelName, resultDict))
-
-    for modelName, resultDict in resultList:
-        print(f"Model: {modelName}, AIC: {resultDict['AIC']}, PMSE: {resultDict['PMSE']}")
+    # for modelName, resultDict in resultList:
+    #     print(f"Model: {modelName}, AIC: {resultDict['AIC']}, PMSE: {resultDict['PMSE']}")
