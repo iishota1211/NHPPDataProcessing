@@ -1,6 +1,7 @@
 from classicUtils import existSRM
 from decimal import *
 from numpy import emath
+import math
 
 def logLikelihoodFunction(modelDict, dataType):
 	modelType = modelDict["modelType"]
@@ -10,7 +11,7 @@ def logLikelihoodFunction(modelDict, dataType):
 		models = existSRM.ClassicTypeI()
 		if dataType == "time":
 			likelihoodFun = LLF_t_float
-			likelihoodFun_backup = LLF_t
+			likelihoodFun_backup = LLF_t_multi_version
 		if dataType == "group":
 			likelihoodFun = LLF_g_float
 			likelihoodFun_backup = LLF_g
@@ -22,17 +23,17 @@ def logLikelihoodFunction(modelDict, dataType):
 def LLF_t_multi_version(args, timeDataFormat, meanValueFun, intensityFun):
     res = 0
 
-    for timeData in timeDataFormat:
-        last_t,last_n, = timeData
+    for timeDataList in timeDataFormat:
+        last_t,last_n, = timeDataList[-1]
         meanValue = meanValueFun(last_t, args)
         res = - meanValue
-        for dataEle in timeDataFormat:
+        for dataEle in timeDataList:
             t_i = dataEle[0]
             n_i = dataEle[1]
             intensity = intensityFun(t_i, args)
             if intensity == Decimal(0.0):
                 return float("-inf")
-            lnIntensity = Decimal(intensity).ln()
+            lnIntensity = math.log(intensity)
             res = res + lnIntensity
             
     return float(res)

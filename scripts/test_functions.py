@@ -1,4 +1,3 @@
-from classicUtils import modelTool
 import math
 from testFolder import revisedModelTool
 from usrLocalLib import usrDataProcess, usrReportProcess
@@ -83,10 +82,11 @@ def guess_init_parameters(trainData,modelDict):
         parameters = parameter_func(last_t, last_n) if parameter_func else None
         return parameters
 
-def calculate_parameters(modelDict, dataType, culFormatedTrainData):
+def calculate_parameters(modelDict, dataType, culFormatedTrainDataList):
     meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
     intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
     likelihoodFun, likelihoodFun_backup = revisedModelTool.logLikelihoodFunction(modelDict, dataType)
+    likelihoodFunMultiversion = likelihoodFun_backup
     parameterBounds = modelTool.parameterBounds(modelDict)
 
     if likelihoodFun is None:
@@ -94,15 +94,16 @@ def calculate_parameters(modelDict, dataType, culFormatedTrainData):
         return None
 
     def lossFun(paraList, culFormatedTrainData, meanValueFun, intensityFun):
-        return -likelihoodFun(paraList, culFormatedTrainData, meanValueFun, intensityFun)
+        return -likelihoodFunMultiversion(paraList, culFormatedTrainData, meanValueFun, intensityFun)
     
-    initPara = guess_init_parameters(culFormatedTrainData, modelDict)
+    initPara = guess_init_parameters(culFormatedTrainDataList[-1], modelDict)
     if initPara is None:
         print(f"Model {modelDict['modelName']} does not support parameter estimation yet.")
         return None
     
+    print("calculating parameters for model: "+modelDict["modelName"]+" with initial parameters: "+str(initPara))
     if len(initPara) == 2:
-        optimizeRes = optimize.minimize(lossFun, initPara, args=(culFormatedTrainData, meanValueFun, intensityFun), bounds=parameterBounds)
+        optimizeRes = optimize.minimize(lossFun, initPara, args=(culFormatedTrainDataList, meanValueFun, intensityFun), bounds=parameterBounds)
         paraList = optimizeRes.x
 
         return paraList
@@ -113,7 +114,7 @@ def calculate_parameters(modelDict, dataType, culFormatedTrainData):
             a = a_list[i]
             b = b_list[i]
             c = c_list[i]
-            optimizeRes = optimize.minimize(lossFun, [a, b, c], args=(culFormatedTrainData, meanValueFun, intensityFun), bounds=parameterBounds)
+            optimizeRes = optimize.minimize(lossFun, [a, b, c], args=(culFormatedTrainDataList, meanValueFun, intensityFun), bounds=parameterBounds)
             paraList.append(optimizeRes.x)
             print(f"Parameters for model {modelDict['modelName']} with c={c}: {paraList[-1]}")
 
@@ -138,59 +139,61 @@ def test_parameters(parameterList, modelDict, dataType, culFormatedTrainData):
 
     return paraList
 
+def main():
+    dataSetDict = usrDataProcess.loadData(config.segmentPatternFlag, config.normalFlag)
+    dataType = "time"
+    predInterval = 0.5
+    dataName = "DS1"
+    dataDict = dataSetDict[dataType][predInterval][dataName]
 
+    print(f"dataType : {dataType}, dataName : {dataName}, predInterval : {predInterval}")
+    dataDict = dataSetDict[dataType][predInterval][dataName]
+    culFormatedTrainData = dataDict["culFormatedTrainData"]
 
-dataSetDict = usrDataProcess.loadData(config.segmentPatternFlag, config.normalFlag)
-dataType = "time"
-predInterval = 0.5
-dataName = "DS1"
-dataDict = dataSetDict[dataType][predInterval][dataName]
+    print("normalized training data")
+    for nowTime, nowNum in culFormatedTrainData:
+        print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
 
-print(f"dataType : {dataType}, dataName : {dataName}, predInterval : {predInterval}")
-dataDict = dataSetDict[dataType][predInterval][dataName]
-culFormatedTrainData = dataDict["culFormatedTrainData"]
-
-print("normalized training data")
-for nowTime, nowNum in culFormatedTrainData:
-    print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
-
-culFormatedTestData = dataDict["culFormatedTestData"]
-print("normalized test data")
-for nowTime, nowNum in culFormatedTestData:
-    print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
-
-modelType = "typeI"
-AICs = []
-for modelName in modelNameList:
-    # declare modeDict for storing model name and model type
-    modelDict = dict()
-    modelDict["modelType"] = modelType
-    modelDict["modelName"] = modelName
-
-    # model inplementation
-    meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
-    intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
-    parameterBounds = modelTool.parameterBounds(modelDict)
-
-    methodDict = None
-    # start parameter estimation
-    resDict = classicEM.parameterEstimate(methodDict, modelDict, dataType, culFormatedTrainData)
-    paraList = resDict["paraList"]
-
-    paraList_scipy = test_parameters(paraList, modelDict, dataType, culFormatedTrainData)
-    AICs.append(resDict["measureValueDict"]["AIC"])
-    print(f"Model: {modelName}")
-    print(f"original paramter List: {paraList}")
-    if paraList_scipy is not None:
-        print(f"Scipy paramter List: {paraList_scipy}")
-    print(f"Measure Names: {resDict['measureNameList']}")
-    print(f"Measure Values: {resDict['measureValueDict']['AIC']}")
-
-    # printing prediction values
+    culFormatedTestData = dataDict["culFormatedTestData"]
+    print("normalized test data")
     for nowTime, nowNum in culFormatedTestData:
-        predNum = meanValueFun(nowTime, paraList)
-        print(f"(Time) {nowTime} : (Predicted Value) {predNum}")
-    print("\n")
+        print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
+
+    modelType = "typeI"
+    AICs = []
+    for modelName in modelNameList:
+        # declare modeDict for storing model name and model type
+        modelDict = dict()
+        modelDict["modelType"] = modelType
+        modelDict["modelName"] = modelName
+
+        # model inplementation
+        meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
+        intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
+        parameterBounds = modelTool.parameterBounds(modelDict)
+
+        methodDict = None
+        # start parameter estimation
+        resDict = classicEM.parameterEstimate(methodDict, modelDict, dataType, culFormatedTrainData)
+        paraList = resDict["paraList"]
+
+        paraList_scipy = test_parameters(paraList, modelDict, dataType, culFormatedTrainData)
+        AICs.append(resDict["measureValueDict"]["AIC"])
+        print(f"Model: {modelName}")
+        print(f"original paramter List: {paraList}")
+        if paraList_scipy is not None:
+            print(f"Scipy paramter List: {paraList_scipy}")
+        print(f"Measure Names: {resDict['measureNameList']}")
+        print(f"Measure Values: {resDict['measureValueDict']['AIC']}")
+
+        # printing prediction values
+        for nowTime, nowNum in culFormatedTestData:
+            predNum = meanValueFun(nowTime, paraList)
+            print(f"(Time) {nowTime} : (Predicted Value) {predNum}")
+        print("\n")
     
-for modelName, AIC in zip(modelNameList, AICs):
-    print(f"Model: {modelName}, AIC: {AIC}")
+    for modelName, AIC in zip(modelNameList, AICs):
+        print(f"Model: {modelName}, AIC: {AIC}")
+
+if __name__ == "__main__":
+    main()
