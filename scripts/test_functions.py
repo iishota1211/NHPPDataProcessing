@@ -105,6 +105,8 @@ def calculate_parameters(modelDict, dataType, culFormatedTrainDataList):
     if len(initPara) == 2:
         optimizeRes = optimize.minimize(lossFun, initPara, args=(culFormatedTrainDataList, meanValueFun, intensityFun), bounds=parameterBounds)
         paraList = optimizeRes.x
+        aic = optimizeRes.fun*2 + 2*len(initPara)
+        print(f"Parameters for model {modelDict['modelName']}: {paraList}, AIC: {aic}")
 
         return paraList
     elif len(initPara) == 3:
@@ -116,7 +118,9 @@ def calculate_parameters(modelDict, dataType, culFormatedTrainDataList):
             c = c_list[i]
             optimizeRes = optimize.minimize(lossFun, [a, b, c], args=(culFormatedTrainDataList, meanValueFun, intensityFun), bounds=parameterBounds)
             paraList.append(optimizeRes.x)
+            aic = optimizeRes.fun*2 + 2*len(initPara)
             print(f"Parameters for model {modelDict['modelName']} with c={c}: {paraList[-1]}")
+            print(f"Parameters for model {modelDict['modelName']}: {paraList}, AIC: {aic}")
 
         return paraList
     else:
