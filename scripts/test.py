@@ -21,7 +21,7 @@ def testLLF(methodDict, modelDict, dataType, dataDict):
     AIC = resDict["measureValueDict"]["AIC"]
     modelName = modelDict["modelName"]
     print(f"Model: {modelName}")
-    print(f"paramter List: {paraList}")
+    print(f"parameter List: {paraList}")
     print(f"Measure Names: {resDict['measureNameList']}")
     print(f"Measure Values: {resDict['measureValueDict']['AIC']}")
 

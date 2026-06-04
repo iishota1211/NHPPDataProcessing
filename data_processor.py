@@ -5,39 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from utility import *
 
-def extract_vendor_product(cpe_string):
-    parts = cpe_string.split(":")
-
-    min_parts = 5
-    vendor_index = 3
-    product_index = 4
-
-    if len(parts) < min_parts:
-        return None, None
-
-    vendor = parts[vendor_index]
-    product = parts[product_index]
-
-    return vendor, product
-
-def filter_cve(cve,target_vendor, target_product):
-    configurations = cve.get("configurations", {})
-    nodes = []
-    cpeMatches = []
-    for config in configurations:
-        nodes.extend(config.get("nodes", []))
-    for node in nodes:
-        cpeMatches.extend(node.get("cpeMatch", []))
-    is_match = False
-    for cpeMatch in cpeMatches:
-        criteria = cpeMatch.get("criteria", "")
-        vendor, product = extract_vendor_product(criteria)
-        if vendor == target_vendor and product == target_product:
-            is_match = True
-            break
-
-    return is_match
-
 def validate_version(cpe_string, target_vendor, target_product):
     vendor, product = extract_vendor_product(cpe_string)
     if vendor != target_vendor or product != target_product:
@@ -51,8 +18,8 @@ def validate_version(cpe_string, target_vendor, target_product):
     version_index = 5
     tmp_version = parts[version_index]
     try:
-        version = int(tmp_version)
-        return version
+        version_number = int(tmp_version)
+        return version_number
     except ValueError:
         return None
 
@@ -71,20 +38,13 @@ def filter_date_and_versions(cves,target_vendor, target_product):
             vendor, product = extract_vendor_product(cpe_string)
             if vendor != target_vendor or product != target_product:
                 continue
-            version = validate_version(cpe_string, target_vendor, target_product)
-            if version is None:
+            version_number = validate_version(cpe_string, target_vendor, target_product)
+            if version_number is None:
                 continue
-            key = f"version_{version}"
+            key = f"version_{version_number}"
             value = cve.get("published")
             filtered_data = append_data(filtered_data, key, value)
     return filtered_data
-
-def append_data(dict,key,value):
-    if key in dict:
-        dict[key].append(value)
-    else:
-        dict[key] = [value]
-    return dict
 
 def main():
     current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -96,9 +56,6 @@ def main():
         cves = original_data
         filtered_cves = list(filter(lambda x: filter_cve(x, "fedoraproject", "fedora"),cves))
         filtered_data = filter_date_and_versions(filtered_cves, "fedoraproject", "fedora")
-        total_filtered_cves += len(filtered_cves)
-        print(f"CVEs: {len(filtered_cves)}")
-        print(f"current total filtered CVEs: {total_filtered_cves}")
 
         filtered_json_file_path = os.path.join(base_dir, "filtered_details", "filtered_data.json")
         filtered_json_data = {}
