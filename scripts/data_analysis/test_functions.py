@@ -106,23 +106,22 @@ def calculate_parameters(modelDict, dataType, culFormatedTrainDataList):
         optimizeRes = optimize.minimize(lossFun, initPara, args=(culFormatedTrainDataList, meanValueFun, intensityFun), bounds=parameterBounds)
         paraList = optimizeRes.x
         aic = optimizeRes.fun*2 + 2*len(initPara)
-        print(f"Parameters for model {modelDict['modelName']}: {paraList}, AIC: {aic}")
 
-        return paraList
+        return paraList,aic
     elif len(initPara) == 3:
         a_list, b_list, c_list = initPara
         paraList = []
+        aic = []
         for i in range(len(c_list)):
             a = a_list[i]
             b = b_list[i]
             c = c_list[i]
             optimizeRes = optimize.minimize(lossFun, [a, b, c], args=(culFormatedTrainDataList, meanValueFun, intensityFun), bounds=parameterBounds)
             paraList.append(optimizeRes.x)
-            aic = optimizeRes.fun*2 + 2*len(initPara)
-            print(f"Parameters for model {modelDict['modelName']} with c={c}: {paraList[-1]}")
-            print(f"Parameters for model {modelDict['modelName']}: {paraList}, AIC: {aic}")
+            aic.append(optimizeRes.fun*2 + 2*len(initPara))
+            #print(f"Parameters for model {modelDict['modelName']} with c={c}: {paraList[-1]}")
 
-        return paraList
+        return paraList,aic
     else:
         return None
     
@@ -181,7 +180,7 @@ def main():
         resDict = classicEM.parameterEstimate(methodDict, modelDict, dataType, culFormatedTrainData)
         paraList = resDict["paraList"]
 
-        paraList_scipy = test_parameters(paraList, modelDict, dataType, culFormatedTrainData)
+        paraList_scipy, aic = test_parameters(paraList, modelDict, dataType, culFormatedTrainData)
         AICs.append(resDict["measureValueDict"]["AIC"])
         print(f"Model: {modelName}")
         print(f"original paramter List: {paraList}")

@@ -127,6 +127,16 @@ def save_excel_data_conditionally(data, file_path, is_save):
         save_to_excel(data, file_path)
         print(f"Excel Timed data saved to {file_path}")
 
+def select_data_type():
+    choice = input("Please select the data type (Type1:1, Type2:2): ").lower()
+    if choice == "1":
+        return "Type1"
+    elif choice == "2":
+        return "Type2"
+    else:
+        print("Invalid choice. Please enter '1' or '2'.")
+        return select_data_type()
+
 
 def find_time_scale(time_scale):
     second = 1
@@ -144,7 +154,7 @@ def find_time_scale(time_scale):
                 return key
 
 def main():
-    dataType = "Type1"
+    dataType = select_data_type()
     current_dir = os.path.dirname(os.path.realpath(__file__))
     json_source_folder = os.path.join(current_dir, "filtered_data", "truncated_data", dataType)
     json_save_folder_base_path = os.path.join(current_dir, "filtered_data", "timed_data", dataType)
@@ -168,10 +178,8 @@ def main():
         data = load_json_data(path)
         file_name = path.stem
         if not file_name in version_detail.keys():
-            print(f"File {file_name} not found in version detail. Skipping.")
             continue
         if not is_in_version_range(file_name, start_version, end_version):
-            print(f"File {file_name} is not in the selected version range ({start_version}-{end_version}). Skipping.")
             continue
 
         print(f"data length: {len(data)}, file name: {file_name}")

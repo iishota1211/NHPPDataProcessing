@@ -6,6 +6,8 @@ from usrLocalLib import usrDataProcess
 from classicGlobalLib import classicEM
 import config
 from test_functions import *
+import matplotlib.pyplot as plt
+import numpy as np
 
 modelNameList 	= ["Exp","Gamma","Pareto","LogEVMin","Plaw","Log"]
 modelNameList 	= ["Exp","Pareto","Plaw","Log"]
@@ -14,6 +16,7 @@ model_with_parameter_c_list = ["Gamma","Pareto","LogEVMin"]
 dataSetDict = usrDataProcess.loadData(config.segmentPatternFlag, config.normalFlag)
 modelType = "typeI"
 dataType = "time"
+predInterval = 0.5
 
 def testLLF(methodDict, modelDict, dataType, dataDict):
     meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
@@ -119,8 +122,44 @@ def displayTestDataSet(culFormatedTestData):
     for nowTime, nowNum in culFormatedTestData:
         print(f"(Time) {nowTime} : (Actual Value) {nowNum}")
 
+def saveResultsToFile(resultDict, filePath):
+    with open(filePath, 'w') as f:
+        json.dump(resultDict, f, indent=4)
 
-for predInterval in dataSetDict[dataType]:
+def sliceDataSetDictByVersion(dataSetDict,startVersion, endVersion):
+    dataSetByVersionDict = dataSetDict
+    for key in list(dataSetDict[dataType][predInterval].keys()):
+        dataName = key
+        version = int(dataName.split("_")[-1])
+        if version < startVersion or version > endVersion:
+            dataSetByVersionDict[dataType][predInterval].pop(dataName)
+    return dataSetByVersionDict
+
+def displayFigure(function,data,paraList):
+    initial_x = data[0][0]
+    final_x = data[-1][0]
+    x = np.linspace(initial_x, final_x, 100)
+    plt.plot(x, function(x, paraList), label='Data',linestyle='',marker='o', color='blue')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.title('Multiple Lines Plot')
+    plt.legend()
+    # plt.savefig(os.path.join("results", "multiple_lines_plot.png"))
+    plt.show()
+
+
+firstVersionNum = 30
+lastVersionNum = 35
+totalVersionNum = lastVersionNum - firstVersionNum + 1
+resultList = []
+
+for i in range(totalVersionNum-1):
+    resultDictByDataSetNum = dict()
+    dataSetDict = sliceDataSetDictByVersion(dataSetDict, firstVersionNum + i, lastVersionNum)
+    print("dataset after slicing by version:")
+    for dataName in dataSetDict[dataType][predInterval]:
+        print(f"dataName: {dataName}")
+
 
     culFormatedTrainDataList, culFormatedTestData = mergeDataSetByVersion(dataSetDict)
 
@@ -130,9 +169,8 @@ for predInterval in dataSetDict[dataType]:
         modelDict["modelName"] = modelName
         methodDict = None
         meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
-    
-        print(f"Testing model: {modelName}")
-        paraList_scipy = calculate_parameters(modelDict, dataType, culFormatedTrainDataList)
+
+        paraList_scipy, aic = calculate_parameters(modelDict, dataType, culFormatedTrainDataList)
         pmse = []
         if paraList_scipy is None:
             print(f"Model {modelName} does not support parameter estimation yet.")
@@ -140,6 +178,20 @@ for predInterval in dataSetDict[dataType]:
             for para in paraList_scipy:
                 pmse.append(calculatePMSE(culFormatedTestData, meanValueFun, para))
                 print(f"PMSE for model {modelName} with parameters {para}: {pmse[-1]}\n")
+                print(f"AIC for model {modelName}: {aic}\n")
         else:
             pmse = calculatePMSE(culFormatedTestData, meanValueFun, paraList_scipy)
             print(f"PMSE for model {modelName} with parameters {paraList_scipy}: {pmse}\n")
+            print(f"AIC for model {modelName}: {aic}\n")
+
+        resultDictByDataSetNum[modelName] = {"PMSE": pmse, "AIC": aic}
+    resultList.append(resultDictByDataSetNum)
+    meanValueFunLog = modelTool.meanValueFunction({"modelType": modelType, "modelName": "Log"})[0]
+    displayFigure(meanValueFunLog, culFormatedTestData, paraList_scipy)
+
+# saveResultsToFile(resultList, "results_by_version.json")
+for i in range(totalVersionNum-1):
+    print(f"final result for version range {firstVersionNum + i} - { lastVersionNum}:")
+    for modelName in resultList[i]:
+        print(f"Model: {modelName}, PMSE: {resultList[i][modelName]['PMSE']}, AIC: {resultList[i][modelName]['AIC']}")
+    print("\n")
