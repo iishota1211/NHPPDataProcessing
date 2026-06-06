@@ -3,7 +3,9 @@
 - convert test data and train data into several classes
   - inspect the structure of culFormatedData 
   - find out which scripts generate the data
-
+- change the specifications for dataset path
+  - configurations can be modified inside the main script
+  
 structure of dataDictionary (dataLoader.py)
 ```json
 {

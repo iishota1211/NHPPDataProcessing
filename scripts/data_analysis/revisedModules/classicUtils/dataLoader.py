@@ -8,13 +8,12 @@ def readData(dataConfigDict, predIntervalList, segmentPatternFlag = "dataLength"
 	# 读取数据
 	for dataType in dataConfigDict:
 		if dataType not in dataTypeList:
-			print("coreInit.readData() : "+str(dataType)+" 类型的数据不存在")
+			print("coreInit.readData() : "+str(dataType)+" doesn't match the original data Types")
 			raise
 		dataSetDict[dataType] = dict()
 		dataPath = dataConfigDict[dataType]["path"]
 
-		# 读取数据
-		
+
 		dataDict = dict()
 		for dataName in dataConfigDict[dataType]["dataSet"]:
 			#print("1."+dataType + dataName)

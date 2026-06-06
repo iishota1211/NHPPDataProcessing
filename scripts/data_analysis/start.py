@@ -14,7 +14,6 @@ import config
 # calculation for Log,Plaw,Gtlogist models is unstable. Exluding them is recommended for now.
 modelNameList 	= ["Exp","Gamma","Pareto","TruncNormal","LogNormal","TruncLogist","LogLogist","TruncEVMax","LogEVMax","TruncEVMin","LogEVMin"]
 
-print("获取数据")
 # 标准化数据读取
 dataSetDict = usrDataProcess.loadData(config.segmentPatternFlag, config.normalFlag)
 #人工检验数据正确性
@@ -50,7 +49,7 @@ for dataType in dataSetDict:
 				modelDict["modelType"] = modelType
 				modelDict["modelName"] = modelName
 
-				# model inplementation
+				# model implementation
 				meanValueFun, meanValueFun_backup = modelTool.meanValueFunction(modelDict)
 				intensityFun, intensityFun_backup = modelTool.intensityFunction(modelDict)
 				likelihoodFun, likelihoodFun_backup = modelTool.logLikelihoodFunction(modelDict, dataType)
