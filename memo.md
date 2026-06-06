@@ -5,6 +5,7 @@
   - find out which scripts generate the data
 - change the specifications for dataset path
   - configurations can be modified inside the main script
+  - use .env to set the default config
   
 structure of dataDictionary (dataLoader.py)
 ```json
