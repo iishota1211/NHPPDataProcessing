@@ -5,6 +5,6 @@ __pycache__/
 
 /filtered_data/filtered_cves
 /original_data/json/
-
 scripts/data_analysis/data/
 scripts/data_analysis/report/
+/scripts/data_analysis/testScripts/
