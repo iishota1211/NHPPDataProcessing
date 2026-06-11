@@ -6,11 +6,18 @@
 - change the specifications for dataset path
   - configurations can be modified inside the main script
   - use .env to set the default config
-  
+- create multiple classes 
+  - separate dataset by dataType (group data and time data)
+  - create base intensity model class
+  - create process wise and type wise mean value classes
+
+
+
+
 structure of dataDictionary (dataLoader.py)
 ```json
 {
-  "dataType"{
+  "dataType":{
     "predInterval": {
       "datasetName": {
         "culTrainData",
